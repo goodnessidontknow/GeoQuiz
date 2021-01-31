@@ -1,13 +1,14 @@
 package com.appdev.geoquiz;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "QuizActivity";
@@ -112,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         if (areAllTrue(mAnswered)) {
             int right = 0;
             for(boolean b : mAnswers) if(b) right++;
-            Toast.makeText(this, "You got " + right + "/" + mQuestionBank.length + " correct", Toast.LENGTH_SHORT).show();
+            makeToast("You got " + right + "/" + mQuestionBank.length + " correct");
         }
         int question = mQuestionBank[mCurrentIndex].getTextResId();
         mQuestionTextView.setText(question);
@@ -128,7 +129,20 @@ public class MainActivity extends AppCompatActivity {
             messageResID = R.string.incorrect_toast;
         }
         mAnswered[mCurrentIndex] = true;
-        Toast.makeText(this, messageResID, Toast.LENGTH_SHORT).show();
+        makeToast(messageResID);
+        updateQuestion();
+    }
+
+    public void makeToast(int text) {
+        Toast toast = Toast.makeText(this, text, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP | Gravity.CENTER_VERTICAL,0,0);
+        toast.show();
+    }
+
+    public void makeToast(String text) {
+        Toast toast = Toast.makeText(this, text, Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP | Gravity.CENTER_VERTICAL,0,0);
+        toast.show();
     }
 
     public static boolean areAllTrue(boolean[] array)
