@@ -1,5 +1,8 @@
 package com.appdev.geoquiz;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -8,15 +11,19 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
+
     private static final String TAG = "QuizActivity";
     private static final String KEY_INDEX = "index";
     private static final String ANSWERS = "answers";
     private static final String ANSWERED = "answered";
+    private static final String CHEATED = "cheated";
+    private static final int REQUEST_CODE_CHEAT = 0;
 
-    private Button mTrueButton, mFalseButton;
+    private Button mTrueButton, mFalseButton, mCheatButton;
     private ImageButton mNextButton, mPrevButton;
     private TextView mQuestionTextView;
     private Question[] mQuestionBank = new Question[] {
@@ -26,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     };
     private boolean[] mAnswered = new boolean[3];
     private boolean[] mAnswers = new boolean[3];
+
+    private boolean mAnswerShown;
 
     private int mCurrentIndex = 0;
 
@@ -46,11 +55,19 @@ public class MainActivity extends AppCompatActivity {
         mFalseButton = findViewById(R.id.false_button);
         mFalseButton.setOnClickListener(v -> {if (!mAnswered[mCurrentIndex]) checkAnswer(false);});
 
+        mCheatButton = findViewById(R.id.cheat_button);
+        mCheatButton.setOnClickListener(v -> {
+            boolean answerIsTrue = mQuestionBank[mCurrentIndex].isAnswerTrue();
+            Intent intent = CheatActivity.newIntent(this, answerIsTrue);
+            startActivityForResult(intent, REQUEST_CODE_CHEAT);
+        });
+
         mNextButton = findViewById(R.id.next_button);
         mPrevButton = findViewById(R.id.prev_button);
 
         mNextButton.setOnClickListener(v -> {
             mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.length;
+            mAnswerShown = false;
             updateQuestion();
         });
         mPrevButton.setOnClickListener(v -> {
@@ -95,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
         savedInstanceState.putInt(KEY_INDEX, mCurrentIndex);
         savedInstanceState.putBooleanArray(ANSWERED, mAnswered);
         savedInstanceState.putBooleanArray(ANSWERS, mAnswers);
+        savedInstanceState.putBoolean(CHEATED, mAnswerShown);
     }
 
     @Override
@@ -120,16 +138,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkAnswer(boolean userPressedTrue) {
-        int messageResID = 0;
-        if (userPressedTrue == mQuestionBank[mCurrentIndex].isAnswerTrue()) {
-            messageResID = R.string.correct_toast;
-            mAnswers[mCurrentIndex] = true;
-        }
-        else {
-            messageResID = R.string.incorrect_toast;
+        if (mAnswerShown) {
+            makeToast(R.string.judgment_toast);
+        } else {
+            int messageResID = 0;
+            if (userPressedTrue == mQuestionBank[mCurrentIndex].isAnswerTrue()) {
+                messageResID = R.string.correct_toast;
+                mAnswers[mCurrentIndex] = true;
+            } else {
+                messageResID = R.string.incorrect_toast;
+            }
+            makeToast(messageResID);
         }
         mAnswered[mCurrentIndex] = true;
-        makeToast(messageResID);
         updateQuestion();
     }
 
@@ -145,9 +166,22 @@ public class MainActivity extends AppCompatActivity {
         toast.show();
     }
 
-    public static boolean areAllTrue(boolean[] array)
-    {
+    public static boolean areAllTrue(boolean[] array) {
         for(boolean b : array) if(!b) return false;
         return true;
+    }
+
+    @SuppressLint("MissingSuperCall")
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null) {
+                return;
+            }
+            mAnswerShown = CheatActivity.wasAnswerShown(data);
+        }
     }
 }
